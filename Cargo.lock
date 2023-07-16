@@ -359,9 +359,12 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "actix-web-lab",
+ "chrono",
  "env_logger",
  "juniper",
  "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
