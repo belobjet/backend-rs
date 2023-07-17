@@ -7,19 +7,35 @@ use actix_web::{
 use std::{io, sync::Arc};
 
 use actix_web_lab::respond::Html;
-use juniper::http::{graphiql::graphiql_source, GraphQLRequest};
+use juniper::http::{playground::playground_source, GraphQLRequest};
 
 mod schema;
-use crate::schema::{create_schema, Schema};
+use crate::schema::{create_schema, Database, Schema};
+
+mod firestore;
+use crate::firestore::get_client;
+
+mod loaders;
+mod models;
 
 #[get("/graphiql")]
 async fn graphql_playground() -> impl Responder {
-    Html(graphiql_source("/graphql", None))
+    Html(playground_source("/graphql", None))
 }
 
 #[route("/graphql", method = "GET", method = "POST")]
 async fn graphql(st: web::Data<Schema>, data: web::Json<GraphQLRequest>) -> impl Responder {
-    let user = data.execute(&st, &()).await;
+    let db = match get_client().await {
+        Ok(db) => db,
+        Err(err) => {
+            log::error!("Error getting firestore client: {}", err);
+            return HttpResponse::InternalServerError().body("Error getting firestore client");
+        }
+    };
+
+    let profile_loader = loaders::get_loader(db.clone());
+    let context = Database::new(db, profile_loader);
+    let user = data.execute(&st, &context).await;
     HttpResponse::Ok().json(user)
 }
 
