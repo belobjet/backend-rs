@@ -67,3 +67,24 @@ pub async fn get_profiles(
 
     Ok(profiles)
 }
+
+pub async fn get_comments(
+    db: &FirestoreDb,
+    bounty_id: String,
+) -> Result<Vec<models::BountyComment>, BoxError> {
+    const COLLECTION_NAME: &'static str = "bounties_comment";
+
+    let snapshot: BoxStream<models::BountyComment> = db
+        .fluent()
+        .select()
+        .from(COLLECTION_NAME)
+        .filter(|q| q.for_all([q.field("bountyID").eq(bounty_id.clone())]))
+        .order_by([("createdAt", FirestoreQueryDirection::Ascending)])
+        .obj()
+        .stream_query()
+        .await?;
+
+    let comments = snapshot.collect().await;
+
+    Ok(comments)
+}

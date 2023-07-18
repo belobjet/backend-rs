@@ -2,8 +2,10 @@ use juniper::{graphql_object, EmptyMutation, EmptySubscription, FieldResult, Roo
 
 use crate::firestore::get_bounties;
 use crate::loaders;
-use crate::models::{Bounty, Profile};
+use crate::models::Bounty;
 use firestore::FirestoreDb;
+
+mod bounties;
 
 #[derive(Clone)]
 pub struct Database {
@@ -24,37 +26,6 @@ impl juniper::Context for Database {}
 pub struct QueryRoot;
 
 #[graphql_object(context = Database)]
-impl Bounty {
-    fn id(&self) -> &str {
-        &self.id
-    }
-
-    fn created_at(&self) -> &chrono::DateTime<chrono::Utc> {
-        &self.created_at
-    }
-
-    fn updated_at(&self) -> &Option<chrono::DateTime<chrono::Utc>> {
-        &self.updated_at
-    }
-
-    fn title(&self) -> &str {
-        &self.title
-    }
-
-    fn content(&self) -> &str {
-        &self.content
-    }
-
-    fn image_urls(&self) -> &Vec<String> {
-        &self.image_urls
-    }
-
-    async fn created_by(&self, ctx: &Database) -> Option<Profile> {
-        ctx.profile_loader.load(self.created_by.clone()).await
-    }
-}
-
-#[juniper::graphql_object(context = Database)]
 impl QueryRoot {
     async fn get_bounties(context: &Database) -> FieldResult<Vec<Bounty>> {
         let bounties = get_bounties(&context.firebase).await?;
